@@ -1,0 +1,5 @@
+.env
+j.env/
+__pycache__/
+kokoro.onnx
+models.py
