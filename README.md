@@ -4,7 +4,7 @@ Rexa is an advanced, Python-based personal voice assistant designed with a hybri
 
 ## 🚀 Key Features
 
-* **Offline Wake Word Detection:** Utilizes Picovoice Porcupine to run a continuous, low-latency background listener for the custom wake word "Rexa" without using internet bandwidth.
+* **Offline Wake Word Detection:** Utilizes OpenWakeWord custom trained model to run a continuous, low-latency background listener for the custom wake word "Rexa" without using internet bandwidth.
 * **Identity Verification:** Implements a security gate that requires a specific voice password upon initial activation before processing subsequent commands.
 * **Modular Skill Architecture:** Built with an interceptor pattern. Spoken commands are first routed through localized skill modules (Weather, System, Apps, News, etc.). If no local skill matches, the prompt is routed to the AI brain.
 * **Contextual AI Brain:** Integrated with Google's Gemini Flash model, maintaining chat session history for natural, multi-turn conversations.
@@ -16,7 +16,7 @@ Rexa is an advanced, Python-based personal voice assistant designed with a hybri
 | Component | Technology / Library |
 | :--- | :--- |
 | **Language** | Python 3.x |
-| **Wake Word Engine** | Picovoice Porcupine (`pvporcupine`) |
+| **Wake Word Engine** | OpenWakeWord model |
 | **Speech-to-Text (STT)** | Google Speech Recognition (`speech_recognition`) |
 | **Text-to-Speech (TTS)** | Kokoro ONNX, Edge-TTS |
 | **LLM Engine** | Google Generative AI (Gemini Flash Lite) |
