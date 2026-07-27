@@ -3,3 +3,6 @@ j.env/
 __pycache__/
 kokoro.onnx
 models.py
+temp_voice.mp3
+temp_voice.wav
+Rexxa.onnx

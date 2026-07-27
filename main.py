@@ -1,7 +1,7 @@
 import speech_recognition as sr
-import struct
 import pyaudio
-import pvporcupine
+import numpy as np
+from openwakeword.model import Model
 import pygame
 import os
 import edge_tts
@@ -17,11 +17,7 @@ from Skills.news import Newsskill
 from Skills.web import Webskill
 from Skills.apps import Appskill
 from dotenv import load_dotenv
-
-
-
-
-
+import openwakeword
 # Initialize Global Variables
 recognizer = sr.Recognizer()
 pygame.mixer.init()
@@ -35,15 +31,11 @@ except Exception as e:
     kokoro = None
 
 # --- GEMINI SETUP ---
-# 1. Configure API
-# (I put your key back in, but be careful sharing this online!)
-
-load_dotenv('keys.env')
+load_dotenv()
 key = os.getenv("Gemini_KEY")
 
 genai.configure(api_key=key)
 
-# 2. Define System Instructions
 sys_instruction = """
 You are Rexa, a witty personal assistant.
 You must speak in plain text only. 
@@ -52,17 +44,11 @@ Keep answers short and conversational.
 You can understand both English and Urdu.
 """
 
-# 3. Initialize Model (Global Scope)
-# We use 'gemini-1.5-flash' because 2.5 is not standard yet
-# --- GEMINI SETUP (UPDATED) ---
-model = genai.GenerativeModel('gemini-2.5-flash-lite-preview-09-2025', system_instruction=sys_instruction)
-
-# Start a Chat Session (This saves history)
+model = genai.GenerativeModel('gemini-2.5-flash', system_instruction=sys_instruction)
 chat_session = model.start_chat(history=[])
-# 4. The Function
+
 def ask_gemini(query):
     try:
-        # We use the chat_session variable we created above
         response = chat_session.send_message(query)
         return response.text.replace("*", "") 
     except Exception as e:
@@ -71,44 +57,31 @@ def ask_gemini(query):
 
 # --- VOICE FUNCTIONS ---
 
-async def generate_voice(text, output_file="voice.mp3"):
+async def generate_voice_online(text, output_file="voice.mp3"):
     voice = "en-US-MichelleNeural" 
     communicate = edge_tts.Communicate(text, voice, rate="+20%")
     await communicate.save(output_file)
 
-async def generate_voice_online(text, output_file="voice.mp3"):
-    voice = "en-US-AriaNeural" 
-    communicate = edge_tts.Communicate(text, voice, rate="+20%")
-    await communicate.save(output_file)   
-
 def speak(text):
-# ... (The rest of your speak function stays the same) ...
-    # PATH A: Try Kokoro (Offline & High Quality)
+    
     if kokoro:
         try:
-            # Generate audio data in memory
-            # Voices: af_sarah, af_bella, am_adam, am_michael
             samples, sample_rate = kokoro.create(
                 text, voice="bf_emma", speed=1.0, lang="en-us"
             )
-            
-            # Save as WAV (Kokoro uses wav)
             output_file = "temp_voice.wav"
             sf.write(output_file, samples, sample_rate)
             
-            # Play it
             pygame.mixer.music.load(output_file)
             pygame.mixer.music.play()
             while pygame.mixer.music.get_busy():
                 pygame.time.Clock().tick(10)
             pygame.mixer.music.unload()
-            return # Success! We are done.
+            return
             
         except Exception as e:
             print(f"Kokoro Error: {e} | Switching to Backup...")
-    
-    # PATH B: Fallback to Edge-TTS (Online)
-    # This runs if Kokoro is missing OR if it crashes
+
     try:
         output_file = "temp_voice.mp3"
         asyncio.run(generate_voice_online(text, output_file))
@@ -121,57 +94,75 @@ def speak(text):
     except Exception as e:
         print(f"Error playing audio: {e}")
 
-
 def docommand(c):
-        
     if "stop rexa" in c.lower() or "go to sleep" in c.lower():
         speak("Going to sleep, sir.")
         exit() 
     else:
-        AI=ask_gemini(c)
+        AI = ask_gemini(c)
         speak(AI)    
 
 # --- MAIN EXECUTION START ---
 if __name__ == "__main__":
-    load_dotenv('keys.env')
-    voicekey = os.getenv('Porcupine_key s')
-    # 1. Setup Porcupine (The Offline Wake Word Engine)
-    porcupine = pvporcupine.create(access_key=voicekey, keyword_paths=["rexa_windows.ppn"]) # This tells Python: "Hey, look inside this specific file to find the sound pattern."
+    load_dotenv()
     
-    # 2. Setup Audio Stream (Input)
+    # 1. Setup openWakeWord Engine
+    # You can specify built-in models like "hey_jarvis", "alexa", "hey_siri", "ok_google".
+    # Or pass a path to a custom ONNX file: wakeword_models=["path/to/model.onnx"]
+    openwakeword.utils.download_models()
+    oww_model = Model(wakeword_models=["Rexxa.onnx"], inference_framework="onnx")
+
+    # Audio configurations required by openWakeWord
+    FORMAT = pyaudio.paInt16
+    CHANNELS = 1
+    RATE = 16000
+    CHUNK = 1280  # 80ms buffer size optimal for openWakeWord processing
+
+    # 2. Setup Audio Stream
     pa = pyaudio.PyAudio()
     audio_stream = pa.open(
-        rate=porcupine.sample_rate,
-        channels=1,
-        format=pyaudio.paInt16,
+        rate=RATE,
+        channels=CHANNELS,
+        format=FORMAT,
         input=True,
-        frames_per_buffer=porcupine.frame_length
+        frames_per_buffer=CHUNK
     )
- 
-    Identity = False 
-    speak("Activating Rexa.")
-    print("Rexa is online and listening (Offline Mode)...")
-    skills = [Weatherskill(),Songskill(),Systemskill(),Newsskill(),Webskill(), Appskill()]
 
-    # 3. The Infinite Loop (No Internet Required for Waiting)
+    Identity = False 
+    speak("Activating Rexxa.")
+    print("Rexa is online and listening (openWakeWord Mode)...")
+    skills = [Weatherskill(), Songskill(), Systemskill(), Newsskill(), Webskill(), Appskill()]
+
+    # Sensitivity threshold (0.5 is standard, lower for more sensitive, higher for stricter)
+    DETECTION_THRESHOLD = 0.5
+
+    # 3. The Infinite Loop
     try:
         while True:
-            # Read raw audio
-            pcm = audio_stream.read(porcupine.frame_length)
-            pcm = struct.unpack_from("h" * porcupine.frame_length, pcm)
+            # Read raw audio buffer (ignore overflow errors when assistant is busy talking)
+            data = audio_stream.read(CHUNK, exception_on_overflow=False)
+            
+            # Convert raw byte buffer to 16-bit integer numpy array
+            pcm = np.frombuffer(data, dtype=np.int16)
 
-            # Check for Wake Word
-            keyword_index = porcupine.process(pcm)
+            # Pass audio frame to openWakeWord
+            prediction = oww_model.predict(pcm)
 
-            # If index >= 0, it heard "Rexa"
-            if keyword_index >= 0:
+            # Check if any active model surpassed the detection threshold
+            detected = False
+            for model_name, score in prediction.items():
+                if score >= DETECTION_THRESHOLD:
+                    detected = True
+                    oww_model.reset()  # Clear memory buffer after detection
+                    break
+
+            if detected:
                 print("Wake word detected!")
                 
                 # --- PATH A: NOT VERIFIED YET ---
-                if Identity == False:
+                if not Identity:
                     speak("Verification required. Confirm identity.")
                     
-                    # Switch to Google Recognizer for Password (needs internet)
                     r = sr.Recognizer()
                     try:
                         with sr.Microphone() as source:
@@ -183,7 +174,7 @@ if __name__ == "__main__":
                             Identity = True 
                         else:   
                             speak("Access denied.")
-                            continue # Restart loop
+                            continue
                     except Exception:
                         speak("I didn't hear a password.")
                         continue
@@ -197,7 +188,6 @@ if __name__ == "__main__":
                 try:
                     with sr.Microphone() as source:
                         print("Waiting for command...")
-                        # Short pauses for snappy response
                         r.pause_threshold = 1 
                         audio = r.listen(source, timeout=3, phrase_time_limit=5)
                     
@@ -206,27 +196,22 @@ if __name__ == "__main__":
 
                     skill_handled = False
 
-                    # --- THE NEW INTERCEPTOR ---
                     for skill in skills:
                         if skill.matches(command):
-                            skill.execute(command,speak) 
+                            skill.execute(command, speak) 
                             skill_handled = True
                             break
                     if skill_handled:
-                            continue
+                        continue
 
-
-
-                    # 👇 THIS MUST BE BACK (LEFT) AT THE SAME LEVEL AS 'if'
                     docommand(command) 
 
                 except Exception:
                     pass
 
     except KeyboardInterrupt:
-        # Cleanup if you press Ctrl+C
-        if porcupine: porcupine.delete()
-        if audio_stream: audio_stream.close()
-        if pa: pa.terminate()
- 
-        
+        # Cleanup
+        if audio_stream: 
+            audio_stream.close()
+        if pa: 
+            pa.terminate()
