@@ -1,32 +1,34 @@
 from .rules import Skill
-from musicLibrary import music
 import webbrowser
 
 class Webskill(Skill):
 
     def matches(self, command):
-       triggers = ["google", "youtube", "facebook","chatgpt","gemini","whatsapp"]
+        triggers = ["google", "youtube", "facebook", "chatgpt", "gemini", "whatsapp"]
+        for trigger in triggers:
+            if trigger in command.lower():
+                return True
+        return False   
 
-       for trigger in triggers:
-           if trigger in command.lower():
-               return True
-       return False   
-
-
-    
     def execute(self, command, speak):
-        if "open google" in command.lower():
-         webbrowser.open("https://google.com")
-        elif "open chatgpt" in command.lower() or "open chat gpt" in command.lower():
+        cmd = command.lower()
+        if "open google" in cmd:
+            speak("Opening Google")
+            webbrowser.open("https://google.com")
+        elif "open chatgpt" in cmd or "open chat gpt" in cmd:
+            speak("Opening ChatGPT")
             webbrowser.open("https://chatgpt.com")
-        elif "open whatsapp" in command.lower():
+        elif "open whatsapp" in cmd:
+            speak("Opening WhatsApp Web")
             webbrowser.open("https://web.whatsapp.com")
-        elif "open youtube" in command.lower():
+        elif "open youtube" in cmd:
+            speak("Opening YouTube")
             webbrowser.open("https://youtube.com")
-        elif "open facebook" in command.lower():
+        elif "open facebook" in cmd:
+            speak("Opening Facebook")
             webbrowser.open("https://facebook.com")
-        elif "open gemini" in command.lower():
-            speak("Opening Gemini")
+        elif "open gemini" in cmd:
+            speak("Opening Google Gemini")
             webbrowser.open("https://gemini.google.com/app")
 
 

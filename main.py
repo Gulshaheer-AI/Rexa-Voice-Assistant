@@ -18,6 +18,7 @@ from Skills.web import Webskill
 from Skills.apps import Appskill
 from dotenv import load_dotenv
 import openwakeword
+
 # Initialize Global Variables
 recognizer = sr.Recognizer()
 pygame.mixer.init()
@@ -32,9 +33,12 @@ except Exception as e:
 
 # --- GEMINI SETUP ---
 load_dotenv()
-key = os.getenv("Gemini_KEY")
+key = os.getenv("Gemini_KEY") or os.getenv("GEMINI_API_KEY")
 
-genai.configure(api_key=key)
+if key:
+    genai.configure(api_key=key)
+else:
+    print("[WARNING] Gemini_KEY not set in .env. LLM conversational brain will be limited.")
 
 sys_instruction = """
 You are Rexa, a witty personal assistant.
@@ -48,6 +52,8 @@ model = genai.GenerativeModel('gemini-2.5-flash', system_instruction=sys_instruc
 chat_session = model.start_chat(history=[])
 
 def ask_gemini(query):
+    if not key:
+        return "Please configure your Gemini API key in the environment to enable full conversational intelligence, sir."
     try:
         response = chat_session.send_message(query)
         return response.text.replace("*", "") 
@@ -63,7 +69,6 @@ async def generate_voice_online(text, output_file="voice.mp3"):
     await communicate.save(output_file)
 
 def speak(text):
-    
     if kokoro:
         try:
             samples, sample_rate = kokoro.create(
@@ -81,7 +86,8 @@ def speak(text):
             
         except Exception as e:
             print(f"Kokoro Error: {e} | Switching to Backup...")
-
+    
+    # Online TTS Fallback (Edge-TTS)
     try:
         output_file = "temp_voice.mp3"
         asyncio.run(generate_voice_online(text, output_file))
@@ -107,10 +113,13 @@ if __name__ == "__main__":
     load_dotenv()
     
     # 1. Setup openWakeWord Engine
-    # You can specify built-in models like "hey_jarvis", "alexa", "hey_siri", "ok_google".
-    # Or pass a path to a custom ONNX file: wakeword_models=["path/to/model.onnx"]
     openwakeword.utils.download_models()
-    oww_model = Model(wakeword_models=["Rexxa.onnx"], inference_framework="onnx")
+    custom_model = "Rexxa.onnx"
+    if os.path.exists(custom_model):
+        oww_model = Model(wakeword_models=[custom_model], inference_framework="onnx")
+    else:
+        print(f"[INFO] '{custom_model}' not found locally. Falling back to default 'hey_jarvis' wake word.")
+        oww_model = Model(wakeword_models=["hey_jarvis"], inference_framework="onnx")
 
     # Audio configurations required by openWakeWord
     FORMAT = pyaudio.paInt16
@@ -128,6 +137,7 @@ if __name__ == "__main__":
         frames_per_buffer=CHUNK
     )
 
+    owner_password = os.getenv("OWNER_NAME", "shaheer").lower()
     Identity = False 
     speak("Activating Rexxa.")
     print("Rexa is online and listening (openWakeWord Mode)...")
@@ -166,10 +176,10 @@ if __name__ == "__main__":
                     r = sr.Recognizer()
                     try:
                         with sr.Microphone() as source:
-                            audio = r.listen(source, timeout=3, phrase_time_limit=3)
+                            audio = r.listen(source, timeout=1, phrase_time_limit=3)
                         password = r.recognize_google(audio).lower()
                         
-                        if "shaheer" in password:   
+                        if owner_password in password:   
                             speak("Identity confirmed. Welcome back sir, How may i help you.")
                             Identity = True 
                         else:   

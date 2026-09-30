@@ -18,12 +18,10 @@ class Weatherskill(Skill):
                 city = self.memory_city    
             junk = [".", "?", "!", ",", " please", " now"]
             for mark in junk:
-             city = city.replace(mark, "")
+                city = city.replace(mark, "")
             
-             city = city.strip().title() # Capitalize it (e.g., "berlin" -> "Berlin")
-        # ---------------------------
-
-             print(f"DEBUG: Searching API for: '{city}'")    
+            city = city.strip().title() # Capitalize it (e.g., "berlin" -> "Berlin")
+            print(f"DEBUG: Searching API for: '{city}'")    
                 
             geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={city}&count=1&language=en&format=json"
             geo_data = requests.get(geo_url).json()
