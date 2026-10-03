@@ -16,6 +16,7 @@ from Skills.system import Systemskill
 from Skills.news import Newsskill
 from Skills.web import Webskill
 from Skills.apps import Appskill
+from Skills.business import BusinessSkill
 from dotenv import load_dotenv
 import openwakeword
 
@@ -141,7 +142,7 @@ if __name__ == "__main__":
     Identity = False 
     speak("Activating Rexxa.")
     print("Rexa is online and listening (openWakeWord Mode)...")
-    skills = [Weatherskill(), Songskill(), Systemskill(), Newsskill(), Webskill(), Appskill()]
+    skills = [Weatherskill(), Songskill(), Systemskill(), Newsskill(), Webskill(), Appskill(), BusinessSkill()]
 
     # Sensitivity threshold (0.5 is standard, lower for more sensitive, higher for stricter)
     DETECTION_THRESHOLD = 0.5

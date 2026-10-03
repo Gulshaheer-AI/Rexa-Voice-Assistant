@@ -1,0 +1,66 @@
+{
+  "business_name": "Shaheer Enterprises",
+  "currency": "PKR",
+  "financials": {
+    "todays_revenue": 185000,
+    "todays_profit": 62000,
+    "todays_expenses": 123000,
+    "profit_margin": "33.5%",
+    "orders_today": 42,
+    "average_order_value": 4404,
+    "month_to_date_revenue": 4250000,
+    "month_to_date_profit": 1420000,
+    "cash_in_bank": 1850000
+  },
+  "campaigns": [
+    {
+      "name": "Summer Mega Sale",
+      "channel": "Meta (Facebook & Instagram)",
+      "status": "Active",
+      "spend": 25000,
+      "revenue": 95000,
+      "conversions": 28,
+      "roas": 3.8
+    },
+    {
+      "name": "Brand Search Ads",
+      "channel": "Google Ads",
+      "status": "Active",
+      "spend": 12000,
+      "revenue": 54000,
+      "conversions": 14,
+      "roas": 4.5
+    },
+    {
+      "name": "Influencer Collab",
+      "channel": "TikTok",
+      "status": "Active",
+      "spend": 15000,
+      "revenue": 36000,
+      "conversions": 10,
+      "roas": 2.4
+    }
+  ],
+  "top_products": [
+    {
+      "name": "Wireless Noise Cancelling Earbuds",
+      "units_sold": 18,
+      "revenue": 81000
+    },
+    {
+      "name": "Smart Fitness Watch Ultra",
+      "units_sold": 12,
+      "revenue": 66000
+    },
+    {
+      "name": "Fast Charging Powerbank 20000mAh",
+      "units_sold": 12,
+      "revenue": 38000
+    }
+  ],
+  "notes": [
+    "Summer Mega Sale campaign is performing at a strong 3.8 ROAS.",
+    "Inventory for Wireless Earbuds is down to 25 units; restock requested.",
+    "Supplier invoice of PKR 85,000 is due on Monday."
+  ]
+}

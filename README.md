@@ -44,6 +44,10 @@
 * 🧩 **Modular Interceptor Skill Engine**
   * Spoken commands are evaluated against an extensible rule-based skill pipeline.
   * Local actions (system control, weather, media, app launching, news, web browsing) execute in milliseconds without calling remote LLMs.
+* 📊 **Plug-and-Play Business Intelligence (BI)**
+  * Instant voice reporting for executives and managers: profits, marketing campaigns, revenues, expenses, orders, and ROAS.
+  * Universal file connector supporting **JSON, CSV, and Excel (.xlsx)** with auto-caching and hot-reload.
+  * Fully bilingual executive responses in **English and Urdu**.
 * 🧠 **Conversational Intelligence (Gemini 2.5 Flash)**
   * Integrated with Google's state-of-the-art **Gemini 2.5 Flash** model.
   * Multi-turn conversational memory, witty custom personality, concise plain-text speech optimization, and bilingual understanding (**English & Urdu**).
@@ -75,6 +79,7 @@ flowchart TD
     
     CommandListener --> SkillEngine{🧩 Skill Pipeline Interceptor}
     
+    SkillEngine -- Business Keyword --> SkillBusiness[📊 Business Skill<br/>JSON / CSV / Excel Connectors]
     SkillEngine -- Weather Keyword --> SkillWeather[🌤️ Weather Skill<br/>Open-Meteo API]
     SkillEngine -- Music Keyword --> SkillSong[🎵 Music Skill<br/>Library / YouTube]
     SkillEngine -- System Keyword --> SkillSystem[💻 System Skill<br/>Lock, Restart, Screenshot]
@@ -84,6 +89,7 @@ flowchart TD
     
     SkillEngine -- No Skill Match --> LLMBrain[🧠 Google Gemini 2.5 Flash<br/>Multi-turn Chat Session]
     
+    SkillBusiness --> SpeakRouter
     SkillWeather --> SpeakRouter
     SkillSong --> SpeakRouter
     SkillSystem --> SpeakRouter
@@ -121,10 +127,20 @@ flowchart TD
 
 ```plaintext
 Rexa-Voice-Assistant/
+├── config/                      # Business Configuration
+│   └── business_config.json     # Client business settings & data paths
+├── connectors/                  # Data Provider Connectors
+│   ├── __init__.py
+│   ├── base.py                  # BaseBusinessConnector interface
+│   └── file_connector.py        # Universal JSON / CSV / Excel connector
+├── data/                        # Business Intelligence Data Files
+│   ├── business_data.json       # Structured company financials & campaigns
+│   └── campaigns.csv            # Tabular campaign ad metrics
 ├── Skills/                      # Modular Skill Extensions
 │   ├── __init__.py
 │   ├── rules.py                 # Abstract Base Class (Skill interface)
 │   ├── apps.py                  # Desktop application launcher (AppOpener)
+│   ├── business.py              # Business Intelligence (BI) & Analytics skill
 │   ├── musicLibrary.py          # Curated song bookmarks & YouTube links
 │   ├── news.py                  # Live global news headlines (GNews API)
 │   ├── song.py                  # Smart music player & YouTube search
@@ -236,9 +252,83 @@ Rexa supports an extensive array of commands out-of-the-box:
 | **Desktop Apps** | *"Open Notepad"*<br>*"Open Chrome"*<br>*"Open Spotify"* | Resolves and opens the closest matching Windows application. |
 | **Web Portals** | *"Open Google"*<br>*"Open YouTube"*<br>*"Open ChatGPT"*<br>*"Open WhatsApp"*<br>*"Open Gemini"* | Launches target web platform in your default browser. |
 | **System Controls** | *"Take screenshot"*<br>*"Lock workstation"*<br>*"Restart"*<br>*"Shutdown"* | Captures screen to `Pictures/rexa_screenshot.png`, locks Windows, or reboots/powers down. |
+| **Business & Analytics (EN)** | *"What is today's profit?"*<br>*"How is our summer sale campaign going?"*<br>*"What are our total expenses today?"*<br>*"Which product is our best seller?"* | Delivers spoken analytical reporting grounded directly in your business data files. |
+| **Business & Analytics (UR)** | *"Aaj ka munafa kitna hai?"*<br>*"Hamari campaign kaisi chal rahi hai?"*<br>*"Aaj ki total revenue kya hai?"* | Full bilingual support: answers in natural spoken Urdu with exact numbers and currency. |
 | **News** | *"Tell me the news"*<br>*"Give me today's headlines"* | Fetches and reads out the top 5 global headlines via GNews API. |
 | **Conversational AI** | *"Explain quantum mechanics simply"*<br>*"How do rockets work?"*<br>*"Aap kaise hain?"* (Urdu support) | Routes to Gemini 2.5 Flash with concise, markdown-free conversational responses. |
 | **Sleep / Exit** | *"Stop Rexa"*<br>*"Go to sleep"* | Says goodbye and safely shuts down the assistant process. |
+
+---
+
+## 📊 Business Intelligence (BI) Integration Guide
+
+Rexa is built with a **plug-and-play data connector architecture** (`connectors/file_connector.py`), allowing any business or manager to immediately integrate their operational data without modifying any code.
+
+### 1. Configure Your Business Profile (`config/business_config.json`)
+
+Set your company name, preferred currency, and data file paths:
+
+```json
+{
+  "business_name": "Shaheer Enterprises",
+  "currency": "PKR",
+  "active_connector": "file",
+  "cache_duration_seconds": 60,
+  "files": {
+    "json_path": "data/business_data.json",
+    "csv_campaigns_path": "data/campaigns.csv",
+    "csv_sales_path": "data/sales.csv",
+    "excel_path": "data/business_data.xlsx"
+  }
+}
+```
+
+### 2. Plug In Your Business Data
+
+You can use **any or all** of the following formats:
+
+* **Option A: Structured JSON (`data/business_data.json`)**
+  Update `financials`, `campaigns`, `top_products`, and `notes`:
+  ```json
+  {
+    "business_name": "Your Company",
+    "currency": "USD",
+    "financials": {
+      "todays_revenue": 14500,
+      "todays_profit": 5200,
+      "todays_expenses": 9300,
+      "orders_today": 38
+    },
+    "campaigns": [
+      {
+        "name": "Black Friday Promo",
+        "channel": "Meta Ads",
+        "status": "Active",
+        "spend": 1200,
+        "revenue": 5400,
+        "roas": 4.5
+      }
+    ]
+  }
+  ```
+
+* **Option B: Tabular CSV Export (`data/campaigns.csv`)**
+  Drop your marketing ad export directly into `data/campaigns.csv`:
+  ```csv
+  campaign,channel,status,spend,revenue,conversions,roas
+  Summer Mega Sale,Meta Ads,Active,25000,95000,28,3.8
+  Google Search Brand,Google Ads,Active,12000,54000,14,4.5
+  ```
+
+* **Option C: Excel Spreadsheet (`data/business_data.xlsx`)**
+  Place your `.xlsx` financial summary workbook in the `data/` directory.
+
+### 3. Ask Rexa Naturally in English or Urdu!
+
+Rexa automatically detects whether the executive is speaking English or Urdu, retrieves the live figures with sub-second in-memory caching, and speaks the exact answer conversationally:
+* 🇬🇧 *"Rexxa... What is today's profit?"* $\rightarrow$ **"Today's profit is PKR 62,000."**
+* 🇵🇰 *"Rexxa... Aaj ka munafa kitna hai?"* $\rightarrow$ **"Sir, aaj ka munafa PKR 62,000 hai."**
+* 🇬🇧 *"Rexxa... How is our Summer Mega Sale campaign doing?"* $\rightarrow$ **"The Summer Mega Sale campaign is performing strongly with a ROAS of 3.8, having generated PKR 95,000 in revenue."**
 
 ---
 

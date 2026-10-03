@@ -1,0 +1,12 @@
+{
+  "business_name": "Shaheer Enterprises",
+  "currency": "PKR",
+  "active_connector": "file",
+  "cache_duration_seconds": 60,
+  "files": {
+    "json_path": "data/business_data.json",
+    "csv_campaigns_path": "data/campaigns.csv",
+    "csv_sales_path": "data/sales.csv",
+    "excel_path": "data/business_data.xlsx"
+  }
+}
